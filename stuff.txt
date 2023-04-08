@@ -1,0 +1,40 @@
+# 0 lines:
+af c1
+31
+00 # payload length
+
+# 1 line:
+
+af c1 
+31 
+08  # 8
+e9 00  # checksum
+01 06  # type, length (6)
+2e 22 29 02 67 00
+
+# 2 lines:
+
+af c1 
+31 
+0e  # 14
+04 03  # checksum
+01 0c # type, length (12)
+47 2c 35 14 e8 00         04 33 13 15 f4 00
+
+
+# 3 lines:
+af c1
+31
+14  # 20
+69 03  # checksum
+01 12  # type, length (18)
+43 25 33 07 ae 00      22 1e 23 03 af 00      02 26 12 06 b1 00
+
+
+
+
+
+# error:
+af c1 
+03  # type of packet
+01 fe 00 fe fe fe fe fe fe fe fe 
