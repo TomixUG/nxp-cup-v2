@@ -1,4 +1,5 @@
 #include <mbed.h>
+#include <cmath>
 
 #include "pixy2.h"
 #include "Serial.h"
@@ -19,20 +20,23 @@ struct Vector
   uint8_t m_index;
   uint8_t m_flags;
 };
-
-// Vector *getLine(uint8_t *receivedData, uint8_t offset)
-// {
-//   uint8_t new_arr[6];
-//   for (int i = 0; i < 6; i++)
-//   {
-//     new_arr[i] = receivedData[i + offset];
-//   }
-//   return (Vector *)new_arr;
-// }
+Vector getLine(const uint8_t *receivedData, int index)
+{
+  Vector v;
+  v.m_x0 = receivedData[index + 0];
+  v.m_y0 = receivedData[index + 1];
+  v.m_x1 = receivedData[index + 2];
+  v.m_y1 = receivedData[index + 3];
+  v.m_index = receivedData[index + 4];
+  v.m_flags = receivedData[index + 5];
+  return v;
+}
 
 // Configure the I2C pins
 I2C i2c(D14, D15); // sda, scl
 const int addr = 0x54 << 1;
+
+const uint8_t searchWhere = 25; // the Y value of finding the point
 
 int main()
 {
@@ -94,17 +98,11 @@ int main()
       uint8_t halfX = 39;
       uint8_t halfY = 25;
 
-      uint8_t new_arr[6];
-      for (int i = 0; i < 6; i++)
-      {
-        new_arr[i] = receivedData[i + 8];
-      }
-
-      Vector *v1 = (Vector *)new_arr;
-      v1->print();
+      Vector v1 = getLine(receivedData, 8);
+      v1.print();
 
       // check if it's on the left or right side
-      if (v1->m_x0 > halfX)
+      if (v1.m_x0 > halfX)
       {
         // right side
         printf("RIGHT SIDE\r\n");
@@ -118,21 +116,24 @@ int main()
     else if (numberOfLines == 2)
     {
       printf("2 lines\r\n");
-      uint8_t new_arr[6];
 
-      for (int i = 0; i < 6; i++)
-      {
-        new_arr[i] = receivedData[i + 8];
-      }
-      Vector *v1 = (Vector *)new_arr;
-      v1->print();
+      Vector v1 = getLine(receivedData, 8);
+      v1.print();
 
-      for (int i = 0; i < 6; i++)
-      {
-        new_arr[i] = receivedData[i + 14];
-      }
-      Vector *v2 = (Vector *)new_arr;
-      v2->print();
+      Vector v2 = getLine(receivedData, 14);
+      v2.print();
+
+      // calculate midpoint
+
+      // calculate X location on the line on fixed height
+      float p1 = v1.m_x0 + (searchWhere - v1.m_y0) * (v1.m_x1 - v1.m_x0) / (float)(v1.m_y1 - v1.m_y0);
+      float p2 = v2.m_x0 + (searchWhere - v2.m_y0) * (v2.m_x1 - v2.m_x0) / (float)(v2.m_y1 - v2.m_y0);
+
+      int steerPoint = round((p1 + p2) / 2);
+
+      printf("1The point loc: %f\r\n", p1);
+      printf("2The point loc: %f\r\n", p2);
+      printf("Steer point: %d\r\n", steerPoint);
     }
     else
     {
