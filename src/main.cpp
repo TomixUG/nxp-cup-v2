@@ -1,8 +1,9 @@
 #include <mbed.h>
 #include <cmath>
+#include "Serial.h"
 
 #include "pixy2.h"
-#include "Serial.h"
+#include "Shield.h"
 
 struct Vector
 {
@@ -31,6 +32,12 @@ Vector getLine(const uint8_t *receivedData, int index)
   v.m_flags = receivedData[index + 5];
   return v;
 }
+float map(float x, float in_min, float in_max, float out_min, float out_max)
+{
+  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+
+Shield shield;
 
 // Configure the I2C pins
 I2C i2c(D14, D15); // sda, scl
@@ -131,30 +138,19 @@ int main()
 
       int steerPoint = round((p1 + p2) / 2);
 
+      float result = map(steerPoint, 0, 78, 0.36, 0.64);
+
+      shield.setServo(result);
+
       printf("1The point loc: %f\r\n", p1);
       printf("2The point loc: %f\r\n", p2);
       printf("Steer point: %d\r\n", steerPoint);
+      printf("Servo: %f\r\n", result);
     }
     else
     {
       printf("a lot\r\n");
     }
-
-    // uint8_t new_arr[6];
-    // for (int i = 0; i < 6; i++)
-    // {
-    //   new_arr[i] = receivedData[i + 8];
-    // }
-
-    // Vector *v1 = (Vector *)new_arr;
-    // v1->print();
-
-    // for (int i = 0; i < 6; i++)
-    // {
-    //   new_arr[i] = receivedData[i + 14];
-    // }
-    // Vector *v2 = (Vector *)new_arr;
-    // v2->print();
 
     wait(1);
   }
