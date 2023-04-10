@@ -45,24 +45,31 @@ const int addr = 0x54 << 1;
 Vector vectors[30];
 
 const uint8_t searchWhere = 25; // the Y value of finding the point
+const int centerConst = 34;
 
 int main()
 {
   wait(5); // wait for the camera to boot up
+
+  shield.init();
   i2c.frequency(100000);
 
   // uint8_t data[] = {0xae, 0xc1, 0x0e, 0x00}; // get version
-  // // uint8_t data[] = {174, 193, 22, 2, 1, 0}; // lamp
   // // uint8_t data[] = {174, 193, 24, 0}; // get fps
-  // i2c.write(addr, (const char *)data, sizeof(data));
 
-  // uint8_t receivedData[10];
-  // i2c.read(addr, (char *)receivedData, sizeof(receivedData));
-  // for (size_t i = 0; i < sizeof(receivedData); i++)
-  // {
-  //   printf("%02x ", receivedData[i]);
-  // }
-  // printf("\n");
+  if (shield.getSw4() == true)
+  {
+    uint8_t data[] = {174, 193, 22, 2, 1, 1}; // lamp
+    i2c.write(addr, (const char *)data, sizeof(data));
+
+    uint8_t receivedData[10];
+    i2c.read(addr, (char *)receivedData, sizeof(receivedData));
+    for (size_t i = 0; i < sizeof(receivedData); i++)
+    {
+      printf("%02x ", receivedData[i]);
+    }
+    printf("\n");
+  }
 
   while (1)
   {
@@ -116,7 +123,7 @@ int main()
       {
         // Do something with vectors[i]
         // vectors[i].print();
-        if (vectors[i].m_x0 > 39)
+        if (vectors[i].m_x0 > centerConst)
         {
           // right side
           // printf("right side\r\n");
@@ -143,11 +150,24 @@ int main()
         rightSideAmount = 1;
       }
 
+      // turn corrections TODO: junk code hhh
+      if ((rightSideTotal / rightSideAmount) < 40)
+      {
+        rightSideTotal = 40;
+        rightSideAmount = 1;
+      }
+
+      if ((leftSideTotal / leftSideAmount) > (78 - 50))
+      {
+        leftSideTotal = (78 - 50);
+        leftSideAmount = 1;
+      }
+
       float centerPoint = ((rightSideTotal / rightSideAmount) + (leftSideTotal / leftSideAmount)) / 2;
       // printf("Center: %f\r\n", centerPoint);
 
-      float x = centerPoint - 39;
-
+      // calculate the error and map it to servo
+      float x = centerPoint - centerConst;
       float result = map(x, 15, -15, 0.36, 0.64);
 
       resultTotal += result;
@@ -158,6 +178,16 @@ int main()
     float servoResult = round(averagedResult * 100.0) / 100.0;
     // printf("Servo: %f \r\n", servoResult);
     shield.setServo(servoResult);
+
+    if (shield.getSw1() == true)
+    {
+      shield.setMotors(20, 20);
+    }
+    else
+    {
+
+      shield.setMotors(0, 0);
+    }
 
     // wait(0.5);
   }
