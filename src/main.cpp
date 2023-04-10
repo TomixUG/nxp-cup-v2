@@ -2,7 +2,6 @@
 #include <cmath>
 #include "Serial.h"
 
-#include "pixy2.h"
 #include "Shield.h"
 
 struct Vector
@@ -43,6 +42,8 @@ Shield shield;
 I2C i2c(D14, D15); // sda, scl
 const int addr = 0x54 << 1;
 
+Vector vectors[30];
+
 const uint8_t searchWhere = 25; // the Y value of finding the point
 
 int main()
@@ -65,94 +66,100 @@ int main()
 
   while (1)
   {
-    uint8_t data[] = {174, 193, 48, 2, 1, 1}; // get main features
-    i2c.write(addr, (const char *)data, sizeof(data));
-    uint8_t receivedData[40];
-    i2c.read(addr, (char *)receivedData, sizeof(receivedData));
-    for (size_t i = 0; i < sizeof(receivedData); i++)
+    float resultTotal = 0;
+    int howManyAverage = 5;
+    for (int i = 0; i < howManyAverage; i++)
     {
-      printf("%02x ", receivedData[i]);
-    }
-    printf("\r\n");
+      uint8_t data[] = {174, 193, 48, 2, 1, 1}; // get main features
+      i2c.write(addr, (const char *)data, sizeof(data));
+      uint8_t receivedData[40];
+      i2c.read(addr, (char *)receivedData, sizeof(receivedData));
+      // for (size_t i = 0; i < sizeof(receivedData); i++)
+      // {
+      //   printf("%02x ", receivedData[i]);
+      // }
+      // printf("\r\n");
 
-    // 6 bytes per line
+      // 6 bytes per line
 
-    uint8_t packetType = receivedData[2];
-    uint8_t payloadLength = receivedData[3];
+      uint8_t packetType = receivedData[2];
+      uint8_t payloadLength = receivedData[3];
 
-    if (packetType != 49)
-    {
-      printf("Invalid data received\r\n");
-      continue;
-    }
-    // no line detected
-    if (payloadLength == 0)
-    {
-      printf("No line detected!\r\n");
-      continue;
-    }
-
-    uint8_t numberOfLines = receivedData[7] / 6;
-
-    if (numberOfLines == 1)
-    {
-      printf("1 line\r\n");
-      // turn right or left
-
-      // max y = 51
-      // max x = 78
-
-      uint8_t halfX = 39;
-      uint8_t halfY = 25;
-
-      Vector v1 = getLine(receivedData, 8);
-      v1.print();
-
-      // check if it's on the left or right side
-      if (v1.m_x0 > halfX)
+      if (packetType != 49)
       {
-        // right side
-        printf("RIGHT SIDE\r\n");
+        // printf("Invalid data received\r\n");
+        i -= 1;
+        continue;
       }
-      else
+      // no line detected
+      if (payloadLength == 0)
       {
-        // left side
-        printf("LEFT SIDE\r\n");
+        printf("No line detected!\r\n");
+        i -= 1;
+        continue;
       }
+
+      uint8_t numberOfVectors = receivedData[7] / 6;
+      for (int i = 0; i < numberOfVectors; i++)
+      {
+        int offset = i * 6 + 8; // Calculate the byte offset for this line in the payload
+        vectors[i] = getLine(receivedData, offset);
+      }
+
+      int rightSideAmount = 0;
+      int rightSideTotal = 0;
+
+      int leftSideAmount = 0;
+      int leftSideTotal = 0;
+
+      for (int i = 0; i < numberOfVectors; i++)
+      {
+        // Do something with vectors[i]
+        // vectors[i].print();
+        if (vectors[i].m_x0 > 39)
+        {
+          // right side
+          // printf("right side\r\n");
+          rightSideTotal += vectors[i].m_x0;
+          rightSideTotal += vectors[i].m_x1;
+
+          rightSideAmount += 2;
+        }
+        else
+        {
+          // left side
+          // printf("left side\r\n");
+          leftSideTotal += vectors[i].m_x0;
+          leftSideTotal += vectors[i].m_x1;
+
+          leftSideAmount += 2;
+        }
+      }
+
+      if (rightSideAmount == 0)
+      {
+        // turn right
+        rightSideTotal = 78;
+        rightSideAmount = 1;
+      }
+
+      float centerPoint = ((rightSideTotal / rightSideAmount) + (leftSideTotal / leftSideAmount)) / 2;
+      // printf("Center: %f\r\n", centerPoint);
+
+      float x = centerPoint - 39;
+
+      float result = map(x, 15, -15, 0.36, 0.64);
+
+      resultTotal += result;
     }
-    else if (numberOfLines == 2)
-    {
-      printf("2 lines\r\n");
 
-      Vector v1 = getLine(receivedData, 8);
-      v1.print();
+    float averagedResult = resultTotal / howManyAverage;
 
-      Vector v2 = getLine(receivedData, 14);
-      v2.print();
+    float servoResult = round(averagedResult * 100.0) / 100.0;
+    // printf("Servo: %f \r\n", servoResult);
+    shield.setServo(servoResult);
 
-      // calculate midpoint
-
-      // calculate X location on the line on fixed height
-      float p1 = v1.m_x0 + (searchWhere - v1.m_y0) * (v1.m_x1 - v1.m_x0) / (float)(v1.m_y1 - v1.m_y0);
-      float p2 = v2.m_x0 + (searchWhere - v2.m_y0) * (v2.m_x1 - v2.m_x0) / (float)(v2.m_y1 - v2.m_y0);
-
-      int steerPoint = round((p1 + p2) / 2);
-
-      float result = map(steerPoint, 0, 78, 0.36, 0.64);
-
-      shield.setServo(result);
-
-      printf("1The point loc: %f\r\n", p1);
-      printf("2The point loc: %f\r\n", p2);
-      printf("Steer point: %d\r\n", steerPoint);
-      printf("Servo: %f\r\n", result);
-    }
-    else
-    {
-      printf("a lot\r\n");
-    }
-
-    wait(1);
+    // wait(0.5);
   }
 }
 
