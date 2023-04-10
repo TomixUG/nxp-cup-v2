@@ -5,7 +5,6 @@ class Shield
 public:
     Shield();
     void init();
-    int * getCamData();
     void setServo(float input);
     void setMotors(float pwrL, float pwrR);
 

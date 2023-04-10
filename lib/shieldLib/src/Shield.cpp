@@ -1,14 +1,10 @@
 #include "mbed.h"
 #include "Shield.h"
 
-#include "TSL1401CL.h"
-
 // servo
 #include "Servo.h"
 Servo myservo(PTD0);
 
-// cam
-TSL1401CL cam(PTC7, PTC5, PTC0);
 // motors
 PwmOut MA1(PTC1);
 PwmOut MB1(PTC3);
@@ -36,20 +32,8 @@ Shield::Shield() {}
 
 void Shield::init()
 {
-    // camera
-    cam.setIntegrationTime(80);
-    while (!cam.integrationReady())
-    {
-        printf("integration not ready");
-    }
-    // motors
     M_EN = 1;
     // MA1.period_us(1000);  MB1.period_us(1000);  MA2.period_us(1000);  MB2.period_us(1000);
-}
-
-int *Shield::getCamData()
-{
-    return cam.getData();
 }
 
 void Shield::setServo(float input)
