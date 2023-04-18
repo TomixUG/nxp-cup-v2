@@ -53,7 +53,9 @@ std::tuple<bool, bool, int, int> detect_edges(const std::vector<int> &pixels)
   std::vector<int> diff_left(diff.begin(), diff.begin() + mid_point);
   std::vector<int> diff_right(diff.begin() + mid_point, diff.end());
 
-  int threshold = std::accumulate(diff.begin(), diff.end(), 0) / diff.size();
+  // int threshold = std::accumulate(diff.begin(), diff.end(), 0) / diff.size();
+  auto max_iter = std::max_element(diff.begin(), diff.end());
+  int threshold = *max_iter * 0.8;
 
   auto [line_left, line_left_idx] = detect_edge(diff_left, threshold);
   auto [line_right, line_right_idx] = detect_edge(diff_right, threshold);
