@@ -113,10 +113,19 @@ int main()
 
       // printf("Line on left side: %s, Index: %d\r\n", line_left ? "true" : "false", line_left_idx);
       // printf("Line on right side: %s, Index: %d\r\n", line_right ? "true" : "false", line_right_idx);
+
+      // if we lose one of the 2 lines, calculate one
       if (line_right == false)
       {
-        line_right_idx = 127;
+        // line_right_idx = 127;
+        line_right_idx = line_left_idx + 80; // h
       }
+      // h
+      if (line_left == false)
+      {
+        line_left_idx = line_right_idx - 80;
+      }
+
       float centerPoint = ((line_left_idx + line_right_idx) / 2);
       total += centerPoint;
     }
@@ -132,7 +141,7 @@ int main()
 
     if (shield.getSw1() == true)
     {
-      shield.setMotors(20, 20);
+      shield.setMotors(10, 10);
     }
     else
     {
