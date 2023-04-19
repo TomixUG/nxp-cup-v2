@@ -49,7 +49,7 @@ const int centerConst = 34;
 
 int main()
 {
-  wait(5); // wait for the camera to boot up
+  // wait(5); // wait for the camera to boot up
 
   shield.init();
   i2c.frequency(100000);
@@ -101,7 +101,8 @@ int main()
       // no line detected
       if (payloadLength == 0)
       {
-        printf("No line detected!\r\n");
+        // printf("No line detected!\r\n");
+        shield.setServo(0.5);
         i -= 1;
         continue;
       }
@@ -151,9 +152,9 @@ int main()
       }
 
       // turn corrections TODO: junk code hhh
-      if ((rightSideTotal / rightSideAmount) < 40)
+      if ((rightSideTotal / rightSideAmount) < 46)
       {
-        rightSideTotal = 40;
+        rightSideTotal = 35;
         rightSideAmount = 1;
       }
 
@@ -181,7 +182,19 @@ int main()
 
     if (shield.getSw1() == true)
     {
+      // if (servoResult < 0.4)
+
+      // {
+      //   shield.setMotors(18, 18);
+      // }
+      // else if (servoResult > 0.54)
+      // {
+      //   shield.setMotors(18, 18);
+      // }
+      // else
+      // {
       shield.setMotors(20, 20);
+      // }
     }
     else
     {
